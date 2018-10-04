@@ -16,6 +16,7 @@ namespace ThridPersonShooter
             mStateManager = GetComponent<StateManager>();
             SetupAnimator();
         }
+
         private void FixedUpdate()
         {
             mStateManager._Reloading = mAnimator.GetBool("Reloading");
@@ -32,6 +33,11 @@ namespace ThridPersonShooter
                 InMovement = Mathf.Clamp(InMovement, 0, (InWalk || mStateManager._Reloading) ? 0.5f : 1f);
                 mAnimator.SetFloat("Forward", InMovement, 0.1f, Time.deltaTime);
             }
+            mAnimator.SetBool("Cover", mStateManager._UnderCover);
+            mAnimator.SetInteger("CoverDirection", mStateManager._CoverDirection);
+            mAnimator.SetBool("CrouchToUpAim", mStateManager._CrouchCover);
+            mAnimator.SetFloat("Stance", mStateManager._Stance);
+            mAnimator.SetBool("AimAtSides", mStateManager._AimAtSides);
         }
 
         private void SetupAnimator()

@@ -1,29 +1,44 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace ThridPersonShooter
 {
     public class FreeCameraLook : Pivot
     {
 
-        [SerializeField] private float moveSpeed = 5f;
-        [SerializeField] private float turnSpeed = 1.5f;
-        [SerializeField] private float turnsmoothing = .1f;
-        [SerializeField] private float tiltMax = 75f;
-        [SerializeField] private float tiltMin = 45f;
-        [SerializeField] private bool lockCursor = false;
+        [SerializeField]
+        private float                   moveSpeed = 5f;
+        [SerializeField]
+        private float                   turnSpeed = 1.5f;
+        [SerializeField]
+        private float                   turnsmoothing = .1f;
+        [SerializeField]
+        private float                   tiltMax = 75f;
+        [SerializeField]
+        private float                   tiltMin = 45f;
+        [SerializeField]
+        private bool                    lockCursor = false;
 
-        private float lookAngle;
-        private float tiltAngle;
+        private float                   lookAngle;
+        private float                   tiltAngle;
 
-        private const float LookDistance = 100f;
+        private const float             LookDistance = 100f;
 
-        private float smoothX = 0;
-        private float smoothY = 0;
-        private float smoothXvelocity = 0;
-        private float smoothYvelocity = 0;
+        private float                   smoothX = 0;
+        private float                   smoothY = 0;
+        private float                   smoothXvelocity = 0;
+        private float                   smoothYvelocity = 0;
 
-        public float crosshairOffsetWiggle = 0.2f;
-        CrosshairManager crosshairManager;
+        public float                    _CrosshairOffsetWiggle = 0.2f;
+        public bool                     _OverrideTarget;
+        public Vector3                  _NewTargetPosition;
+
+        public float                    _CoverAngleMax;
+        public float                    _CoverAngleMin;
+        public bool                     _UnderCover;
+        public int                      _CoverDirection;
+
+        private CrosshairManager mCrosshairManager;
 
         //add the singleton
         public static FreeCameraLook instance;
@@ -50,7 +65,8 @@ namespace ThridPersonShooter
             if (lockCursor)
                 Cursor.lockState = CursorLockMode.Locked;
 
-            crosshairManager = CrosshairManager.GetInstance();
+            mCrosshairManager = CrosshairManager.GetInstance();
+            _NewTargetPosition = target.position;
         }
 
         // Update is called once per frame
@@ -64,8 +80,17 @@ namespace ThridPersonShooter
 
         protected override void Follow(float deltaTime)
         {
-            transform.position = Vector3.Lerp(transform.position, target.position, deltaTime * moveSpeed);
-
+            Vector3 InInitTargetPos = target.position;
+            if (_OverrideTarget)
+            {
+                InInitTargetPos = _NewTargetPosition;
+            }
+            else
+            {
+                _NewTargetPosition = InInitTargetPos;
+            }
+            Vector3 InTargetPosition = Vector3.Lerp(transform.position, InInitTargetPos, deltaTime * moveSpeed);
+            transform.position = InTargetPosition;
         }
 
         void HandleRotationMovement()
@@ -86,8 +111,29 @@ namespace ThridPersonShooter
                 smoothY = y;
             }
 
-            lookAngle += smoothX * turnSpeed;
+            if (!_UnderCover)
+            {
+                lookAngle += smoothX * turnSpeed;
+            }
+            else
+            {
+                float InAngleFromWorldFwd = Vector3.Angle(target.forward, transform.forward);
+                int InDot = DotOrientation(InAngleFromWorldFwd);
 
+                float InMaxAngle = (InAngleFromWorldFwd * InDot) + _CoverAngleMax;
+                float InMinAngle = (InAngleFromWorldFwd * InDot) + _CoverAngleMin;
+
+                lookAngle += smoothX * turnSpeed;
+                lookAngle = Mathf.Clamp(lookAngle, InMinAngle, InMaxAngle);
+            }
+            if (lookAngle > 360)
+            {
+                lookAngle = 0;
+            }
+            if (lookAngle < -360)
+            {
+                lookAngle = 0;
+            }
             transform.rotation = Quaternion.Euler(0f, lookAngle, 0);
 
             tiltAngle -= smoothY * turnSpeed;
@@ -95,16 +141,65 @@ namespace ThridPersonShooter
 
             pivot.localRotation = Quaternion.Euler(tiltAngle, 0, 0);
 
-            if (x > crosshairOffsetWiggle || x < -crosshairOffsetWiggle || y > crosshairOffsetWiggle || y < -crosshairOffsetWiggle)
+            if (x > _CrosshairOffsetWiggle || x < -_CrosshairOffsetWiggle || y > _CrosshairOffsetWiggle || y < -_CrosshairOffsetWiggle)
             {
                 WiggleCrosshairAndCamera(0);
             }
         }
 
+        private int DotOrientation(float pAngleFromWorldFwd)
+        {
+            // Find World Orientation
+            float InNSDot = Vector3.Dot(target.forward, Vector3.forward);
+            float InWEDot = Vector3.Dot(target.forward, Vector3.right);
+            int InReturnVal = 0;
+            // North Check
+            if (InNSDot > 0)
+            {
+                // Not North
+                if (pAngleFromWorldFwd > 45)
+                {
+                    InReturnVal = WestOrEast(InWEDot);
+                }
+                else // North
+                {
+                    InReturnVal = -_CoverDirection;
+                }
+            }
+            else // South Check
+            {
+                // Not South
+                if (pAngleFromWorldFwd > 45)
+                {
+                    InReturnVal = WestOrEast(InWEDot);
+                }
+                else // South
+                {
+                    InReturnVal = -_CoverDirection;
+                }
+            }
+            return InReturnVal;
+        }
+
+        private int WestOrEast(float pWEDot)
+        {
+            int InReturnVal = 0;
+            if (pWEDot < 0)
+            {
+                // Depending on the cover position of the player
+                // we need to switch the multiplier -ve or +ve
+
+                InReturnVal = (_CoverDirection > 0) ? -_CoverDirection : _CoverDirection; ;
+            }
+            else
+            {
+                InReturnVal = (_CoverDirection < 0) ? -_CoverDirection : _CoverDirection; ;
+            }
+            return InReturnVal;
+        }
 
         float offsetX;
         float offsetY;
-
 
         void HandleOffsets()
         {
@@ -121,7 +216,7 @@ namespace ThridPersonShooter
 
         public void WiggleCrosshairAndCamera(float kickback)
         {
-            crosshairManager.activeCrosshair.WiggleCrosshair();
+            mCrosshairManager.activeCrosshair.WiggleCrosshair();
 
             offsetY = kickback;
         }
