@@ -4,7 +4,7 @@ using System.Collections;
 using System;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class SmoothRandom
     {

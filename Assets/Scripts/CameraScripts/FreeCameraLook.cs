@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class FreeCameraLook : Pivot
     {

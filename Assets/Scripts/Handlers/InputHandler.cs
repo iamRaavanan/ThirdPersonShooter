@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class InputHandler : MonoBehaviour
     {

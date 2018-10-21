@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class ShootingHandler : MonoBehaviour
     {
@@ -31,14 +31,23 @@ namespace ThridPersonShooter
         public Transform _CaseSpawn;
 
         public int _MagazineBullets = 0;
+        public int _CarryingAmmo;
         public int _CurrentBullets = 30;
 
-        private void Start()
+        public void Init()
         {
             mStateManager = GetComponent<StateManager>();
         }
 
-        private void Update()
+        public void Tick()
+        {
+            if (!mStateManager._MeleeWeapon)
+            {
+                Shooting();
+            }            
+        }
+
+        private void Shooting()
         {
             mShoot = mStateManager._Shoot;
 
@@ -97,12 +106,12 @@ namespace ThridPersonShooter
                 {
                     mStateManager._ActualShooting = false;
                     _WeaponAnimator.SetBool("Shoot", true);
-                    mTimer -= Time.deltaTime;
+                    mTimer -= mStateManager._CustomFixedDelta;
                 }
             }
             else
             {
-                mTimer -= (mTimer > 0) ? Time.deltaTime : 0;
+                mTimer -= (mTimer > 0) ? mStateManager._CustomFixedDelta : 0;
                 if (_WeaponAnimator != null)
                 {
                     _WeaponAnimator.SetBool("Shoot", false);

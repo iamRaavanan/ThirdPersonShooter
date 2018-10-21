@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class AudioManager : MonoBehaviour
     {
@@ -22,14 +22,14 @@ namespace ThridPersonShooter
         private float mStartingVolumeRun;
         private float mCharacterMovement;
 
-        private void Start()
+        public void Init()
         {
             mStateManager = GetComponent<StateManager>();
             mStartingVolumeRun = _RunFoley.volume;
             _RunFoley.volume = 0;
         }
 
-        private void Update()
+        public void Tick()
         {
             mCharacterMovement = Mathf.Abs(mStateManager._Horizontal) + Mathf.Abs(mStateManager._Vertical);
             mCharacterMovement = Mathf.Clamp01(mCharacterMovement);

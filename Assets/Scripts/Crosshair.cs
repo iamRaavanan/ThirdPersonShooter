@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine.UI;
 using System;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     [Serializable]
     public class Crosshair : MonoBehaviour

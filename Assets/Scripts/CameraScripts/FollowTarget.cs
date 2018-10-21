@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public abstract class FollowTarget : MonoBehaviour
     {

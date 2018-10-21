@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class ShootingRangeTarget : MonoBehaviour
     {

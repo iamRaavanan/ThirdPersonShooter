@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class PlayerMovement : MonoBehaviour
     {
@@ -34,7 +34,7 @@ namespace ThridPersonShooter
         public float _CoverMaxSpeed = 2;
         private List<CoverPosition> mIgnoreCover = new List<CoverPosition>();
 
-        private void Start()
+        public void Init ()
         {
             mInputHandler = GetComponent<InputHandler>();
             mStateManager = GetComponent<StateManager>();
@@ -46,14 +46,14 @@ namespace ThridPersonShooter
             mMFriction.dynamicFriction = mMFriction.staticFriction = 1;
         }
 
-        private void FixedUpdate()
+        public void Tick ()
         {
             mLookPosition = mStateManager._LookPosition;
             mLookDirection = mLookPosition - transform.position;
             mHorizontal = mStateManager._Horizontal;
             mVertical = mStateManager._Vertical;
 
-            if (!mStateManager._UnderCover)
+            if (!mStateManager._UnderCover && !mStateManager._Vaulting)
             {
                 ProcessMovementRotation();
 
@@ -65,19 +65,20 @@ namespace ThridPersonShooter
             }
             else
             {
-                if (!mStateManager._Aiming)
+                if (!mStateManager._Aiming && !mStateManager._Vaulting)
                 {
                     HandleCoverMovement();
                 }
                 GetOffFromCover();
             }
+            mCollider.isTrigger = mStateManager._Vaulting;
         }
 
         private void ProcessMovementRotation()
         {
             bool InGround = mStateManager._OnGround;
 
-            if (mHorizontal != 0 || mVertical != 0 || !InGround)
+            if (mHorizontal != 0 || mVertical != 0 || !InGround || !mStateManager._Vaulting)
             {
                 mCollider.material = mZFriction;
             }
@@ -105,12 +106,12 @@ namespace ThridPersonShooter
             // Now, cover path is not linear, this logic is now obsolete
             #region Obsolete
             //Quaternion InTargetRotation = Quaternion.LookRotation(mStateManager._CoverPosition._StartTransform.forward);
-            //transform.rotation = Quaternion.Slerp(transform.rotation, InTargetRotation, Time.deltaTime * _RotateSpeed);
+            //transform.rotation = Quaternion.Slerp(transform.rotation, InTargetRotation, mStateManager._CustomFixedDelta * _RotateSpeed);
             #endregion
 
             float InWallLength = mStateManager._CoverPosition._Length;
 
-            float InMovement = ((mHorizontal * _CoverAcceleration) * _CoverMaxSpeed) * Time.deltaTime;
+            float InMovement = ((mHorizontal * _CoverAcceleration) * _CoverMaxSpeed) * mStateManager._CustomFixedDelta;
 
             float InLerpMovement = InMovement / InWallLength;
 
@@ -138,7 +139,7 @@ namespace ThridPersonShooter
             InDirection.y = 0;
 
             Quaternion InTargetRotation = Quaternion.LookRotation(InDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, InTargetRotation, Time.deltaTime * _RotateSpeed);
+            transform.rotation = Quaternion.Slerp(transform.rotation, InTargetRotation, mStateManager._CustomFixedDelta * _RotateSpeed);
         }
 
         private void LookForCover ()
@@ -182,13 +183,37 @@ namespace ThridPersonShooter
             // Update raycast distance 
             if (Physics.Raycast (InOrigin, InDirection, out InHit, 2))
             {
+                float InDistance = Vector3.Distance(InOrigin, InHit.point);
                 CoverPosition InCoverPosition = InHit.transform.GetComponentInParent<CoverPosition>();
-                if (InCoverPosition)
+                if (InDistance < 1.5f)
                 {
-                    if (!mIgnoreCover.Contains (InCoverPosition))
+                    // Two colliders in cover-position
+                    if (InCoverPosition)
                     {
-                        mStateManager.GetInCover(InCoverPosition);
-                        mIgnoreCover.Add(InCoverPosition);
+                        // If it's not in the ignored list
+                        if (!mIgnoreCover.Contains(InCoverPosition))
+                        {
+                            if (InDistance < 0.5f && !mStateManager._Vaulting)
+                            {
+                                mStateManager.GetInCover(InCoverPosition);
+                                mIgnoreCover.Add(InCoverPosition);
+                            }
+                            else
+                            {
+                                if (Input.GetKey(KeyCode.Space))
+                                {
+                                    if (!mStateManager._Vaulting)
+                                    {
+                                        bool InClimb = false;
+                                        if (InCoverPosition._CoverType == CoverPosition.CoverType.E_Full)
+                                        {
+                                            InClimb = true;
+                                        }
+                                        mStateManager.Vault(InClimb);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -215,7 +240,7 @@ namespace ThridPersonShooter
                 mLookDirection.y = 0;
                 //Debug.Log("mLookDirection: " + mLookDirection);
                 Quaternion InTargetRotation = Quaternion.LookRotation(mLookDirection);
-                transform.rotation = Quaternion.Slerp(mRigidbody.rotation, InTargetRotation, Time.deltaTime * _RotateSpeed);
+                transform.rotation = Quaternion.Slerp(mRigidbody.rotation, InTargetRotation, mStateManager._CustomFixedDelta * _RotateSpeed);
             }
             else
             {
@@ -233,7 +258,7 @@ namespace ThridPersonShooter
                             float InAngle1 = Quaternion.Angle(transform.rotation, Quaternion.LookRotation(InDirection));
                             if (InAngle1 != 0)
                             {
-                                mRigidbody.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(InDirection), _TurnSpeed * Time.deltaTime);
+                                mRigidbody.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(InDirection), _TurnSpeed * mStateManager._CustomFixedDelta);
                             }
                         }
                     }

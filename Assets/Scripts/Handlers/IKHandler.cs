@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class IKHandler : MonoBehaviour
     {
@@ -28,6 +28,7 @@ namespace ThridPersonShooter
         public Transform                    _OverrideLookTarget;
 
         public Transform                    _RightHandIKTarget;
+        public Transform                    _RightHandIKRotation;
         public Transform                    _RightElbowTarget;
         public float                        _RightHandIKWeight;
         private float                       mTargetRHWeight;
@@ -43,7 +44,7 @@ namespace ThridPersonShooter
         private Transform                   mAimHelperRS;
         private Transform                   mAimHelperLS;
 
-        private void Start()
+        public void Init()
         {
             mAimHelperRS = new GameObject().transform;
             mAimHelperRS.name = "Right Shoulder Aim Helper";
@@ -56,13 +57,20 @@ namespace ThridPersonShooter
             mStateManager = GetComponent<StateManager>();
         }
 
-        private void FixedUpdate()
+        public void Tick()
         {
-            HandleShoulders();
-            AimWeight();
-            HandleRightHandIKWeight();
-            HandleLeftHandIKWeight();
-            HandleShoulderRotation();
+            if (!mStateManager._MeleeWeapon)
+            {
+                HandleShoulders();
+                AimWeight();
+                HandleRightHandIKWeight();
+                HandleLeftHandIKWeight();
+                HandleShoulderRotation();
+            }
+            else
+            {
+                _LookWeight = 0;
+            }
         }
 
         private void AimWeight()
@@ -78,7 +86,7 @@ namespace ThridPersonShooter
                 mTargetWeight = 0;
             }
             float InMultiplier = (mStateManager._Aiming) ? 5 : 30;
-            _LookWeight = Mathf.Lerp(_LookWeight, mTargetWeight, InMultiplier * Time.deltaTime);
+            _LookWeight = Mathf.Lerp(_LookWeight, mTargetWeight, InMultiplier * mStateManager._CustomFixedDelta);
         }
 
         private void HandleShoulders()
@@ -119,7 +127,7 @@ namespace ThridPersonShooter
                 mTargetRHWeight = 0;
                 InMultiplier = 5;
             }
-            _RightHandIKWeight = Mathf.Lerp(_RightHandIKWeight, mTargetRHWeight, Time.deltaTime * InMultiplier);
+            _RightHandIKWeight = Mathf.Lerp(_RightHandIKWeight, mTargetRHWeight, mStateManager._CustomFixedDelta * InMultiplier);
         }
 
         private void HandleLeftHandIKWeight ()
@@ -164,19 +172,19 @@ namespace ThridPersonShooter
                 mTargetLHWeight = 0;
                 InMultiplier = 10;
             }
-            _LeftHandIKWeight = Mathf.Lerp(_LeftHandIKWeight, mTargetLHWeight, Time.deltaTime * InMultiplier);
+            _LeftHandIKWeight = Mathf.Lerp(_LeftHandIKWeight, mTargetLHWeight, mStateManager._CustomFixedDelta * InMultiplier);
         }
 
         private void HandleShoulderRotation()
         {
-            mAimHelperRS.position = Vector3.Lerp(mAimHelperRS.position, mStateManager._LookPosition, Time.deltaTime * 5);
+            mAimHelperRS.position = Vector3.Lerp(mAimHelperRS.position, mStateManager._LookPosition, mStateManager._CustomFixedDelta * 5);
             _WeaponHolder.LookAt(mAimHelperRS.position);
             _RightHandIKTarget.parent.transform.LookAt(mAimHelperRS.position);
 
             if (_EnableTwoHandWield)
             {
                 _SecondHandLookPosition = mStateManager._LookPosition;
-                mAimHelperLS.position = Vector3.Lerp(mAimHelperLS.position, _SecondHandLookPosition, Time.deltaTime * 5);
+                mAimHelperLS.position = Vector3.Lerp(mAimHelperLS.position, _SecondHandLookPosition, mStateManager._CustomFixedDelta * 5);
                 _SecondaryWeaponHolder.LookAt(mAimHelperLS.position);
             }
         }

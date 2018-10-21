@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class ShakeCamera : MonoBehaviour
     {

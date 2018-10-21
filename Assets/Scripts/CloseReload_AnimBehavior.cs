@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-namespace ThridPersonShooter
+namespace Raavanan
 {
     public class CloseReload_AnimBehavior : StateMachineBehaviour
     {
